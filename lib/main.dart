@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:navatech/screens/gallery_view.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,25 +11,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Nava tech',
+      title: 'Gallery App',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: MyGallery(),
+      home: const MyGallery(),
     );
-  }
-}
-
-class MyGallery extends StatefulWidget {
-  const MyGallery({super.key});
-
-  @override
-  State<MyGallery> createState() => _MyGalleryState();
-}
-
-class _MyGalleryState extends State<MyGallery> {
-  @override
-  Widget build(BuildContext context) {
-    return const Placeholder();
   }
 }
