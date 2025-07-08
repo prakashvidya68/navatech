@@ -1,0 +1,48 @@
+class Photo {
+  final int albumId;
+  final int id;
+  final String title;
+  final String url;
+  final String thumbnailUrl;
+
+  Photo({
+    required this.albumId,
+    required this.id,
+    required this.title,
+    required this.url,
+    required this.thumbnailUrl,
+  });
+
+  factory Photo.fromJson(Map<String, dynamic> json) {
+    // Since the provided API is not working, we'll generate URLs using picsum.photos
+    // Seed format: {album_id}_{index} where index is the photo id
+    final albumId = json['albumId'] as int;
+    final photoId = json['id'] as int;
+    final seed = '${albumId}_$photoId';
+
+    return Photo(
+      albumId: albumId,
+      id: photoId,
+      title: json['title'] as String,
+      url:
+          'https://picsum.photos/seed/$seed/600/400', // Full size image since the API is not working
+      thumbnailUrl:
+          'https://picsum.photos/seed/$seed/300/200', // Thumbnail since the API is not working
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'albumId': albumId,
+      'id': id,
+      'title': title,
+      'url': url,
+      'thumbnailUrl': thumbnailUrl,
+    };
+  }
+
+  @override
+  String toString() {
+    return 'Photo(albumId: $albumId, id: $id, title: $title, url: $url, thumbnailUrl: $thumbnailUrl)';
+  }
+}
