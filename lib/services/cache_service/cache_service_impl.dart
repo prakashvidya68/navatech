@@ -20,9 +20,6 @@ class CacheServiceImpl implements CacheService {
 
   @override
   Future<void> init() async {
-    // Initialize Hive
-    await Hive.initFlutter();
-
     // Open default box
     _defaultBox = await Hive.openBox(_defaultBoxName);
   }

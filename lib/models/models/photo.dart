@@ -39,9 +39,9 @@ class Photo extends HiveObject {
       id: photoId,
       title: json['title'] as String,
       url:
-          'https://picsum.photos/seed/$seed/600/400', // Full size image since the API is not working
+          'https://picsum.photos/seed/$seed/600/400.jpg', // Full size image since the API is not working
       thumbnailUrl:
-          'https://picsum.photos/seed/$seed/300/200', // Thumbnail since the API is not working
+          'https://picsum.photos/seed/$seed/300/200.jpg', // Thumbnail since the API is not working
     );
   }
 

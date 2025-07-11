@@ -19,6 +19,8 @@ class GalleryBloc extends Bloc<GalleryEvent, GalleryState> {
     on<LoadAlbums>(_onLoadAlbums);
     on<LoadPhotosForAlbum>(_onLoadPhotosForAlbum);
     on<RefreshData>(_onRefreshData);
+    on<AddAlbumsToTop>(_onAddAlbumsToTop);
+    on<AddAlbumsToBottom>(_onAddAlbumsToBottom);
   }
 
   FutureOr<void> _onLoadAlbums(
@@ -29,11 +31,29 @@ class GalleryBloc extends Bloc<GalleryEvent, GalleryState> {
     try {
       final cachedAlbums = await cacheService.getAll<Album>('albums');
       if (cachedAlbums.isNotEmpty) {
-        emit(AlbumsLoaded(albums: cachedAlbums, photosByAlbum: {}));
+        // On first load, add albums to top to make it feel infinite
+        final albumsWithTop = [...cachedAlbums, ...cachedAlbums];
+        emit(
+          AlbumsLoaded(
+            albums: albumsWithTop,
+            allAlbums: cachedAlbums,
+            photosByAlbum: {},
+            hasAlbumsAtTop: true,
+          ),
+        );
       }
       final albums = await galleryRepo.getAlbums();
       await cacheService.putAll<Album>('albums', albums);
-      emit(AlbumsLoaded(albums: albums, photosByAlbum: {}));
+      // On first load, add albums to top to make it feel infinite
+      final albumsWithTop = [...albums, ...albums];
+      emit(
+        AlbumsLoaded(
+          albums: albumsWithTop,
+          allAlbums: albums,
+          photosByAlbum: {},
+          hasAlbumsAtTop: true,
+        ),
+      );
     } catch (e) {
       emit(GalleryError(e.toString()));
     }
@@ -54,13 +74,25 @@ class GalleryBloc extends Bloc<GalleryEvent, GalleryState> {
       );
       if (cachedPhotos.isNotEmpty) {
         emit(
-          currentState.copyWith(photosByAlbum: {event.albumId: cachedPhotos}),
+          currentState.copyWith(
+            photosByAlbum: {
+              ...currentState.photosByAlbum,
+              ...{event.albumId: cachedPhotos},
+            },
+          ),
         );
         return;
       }
       final photos = await galleryRepo.getPhotosByAlbumId(event.albumId);
       await cacheService.putAll<Photo>('photos_album_${event.albumId}', photos);
-      emit(currentState.copyWith(photosByAlbum: {event.albumId: photos}));
+      emit(
+        currentState.copyWith(
+          photosByAlbum: {
+            ...currentState.photosByAlbum,
+            ...{event.albumId: photos},
+          },
+        ),
+      );
     } catch (e) {
       emit(GalleryError(e.toString()));
     }
@@ -77,5 +109,34 @@ class GalleryBloc extends Bloc<GalleryEvent, GalleryState> {
     } catch (e) {
       emit(GalleryError(e.toString()));
     }
+  }
+
+  FutureOr<void> _onAddAlbumsToTop(
+    AddAlbumsToTop event,
+    Emitter<GalleryState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! AlbumsLoaded) {
+      return;
+    }
+
+    // Add a copy of original albums to the top
+    // allAlbums contains the original unique albums, so we add them to the top
+    final updatedAlbums = [...currentState.allAlbums, ...currentState.albums];
+    emit(currentState.copyWith(albums: updatedAlbums, hasAlbumsAtTop: true));
+  }
+
+  FutureOr<void> _onAddAlbumsToBottom(
+    AddAlbumsToBottom event,
+    Emitter<GalleryState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! AlbumsLoaded) {
+      return;
+    }
+
+    // Add a copy of all albums to the bottom
+    final updatedAlbums = [...currentState.albums, ...currentState.allAlbums];
+    emit(currentState.copyWith(albums: updatedAlbums));
   }
 }

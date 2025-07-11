@@ -23,3 +23,11 @@ class LoadPhotosForAlbum extends GalleryEvent {
 class RefreshData extends GalleryEvent {
   const RefreshData();
 }
+
+class AddAlbumsToTop extends GalleryEvent {
+  const AddAlbumsToTop();
+}
+
+class AddAlbumsToBottom extends GalleryEvent {
+  const AddAlbumsToBottom();
+}
