@@ -1,5 +1,7 @@
-import 'package:bloc/bloc.dart';
-import 'package:meta/meta.dart';
+import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:navatech_assignment/models/models/album.dart';
+import 'package:navatech_assignment/models/models/photo.dart';
 
 part 'gallery_event.dart';
 part 'gallery_state.dart';

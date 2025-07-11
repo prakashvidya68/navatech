@@ -1,4 +1,25 @@
 part of 'gallery_bloc.dart';
 
-@immutable
-sealed class GalleryEvent {}
+abstract class GalleryEvent extends Equatable {
+  const GalleryEvent();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class LoadAlbums extends GalleryEvent {
+  const LoadAlbums();
+}
+
+class LoadPhotosForAlbum extends GalleryEvent {
+  final int albumId;
+
+  const LoadPhotosForAlbum(this.albumId);
+
+  @override
+  List<Object?> get props => [albumId];
+}
+
+class RefreshData extends GalleryEvent {
+  const RefreshData();
+}
