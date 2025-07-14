@@ -18,11 +18,55 @@ class InfiniteGalleryRow extends StatefulWidget {
 }
 
 class _InfiniteGalleryRowState extends State<InfiniteGalleryRow> {
-  int currentPage = 1;
+  final ScrollController _scrollController = ScrollController();
+  bool _isLoadingMore = false;
+  bool _isAddingToStart = false;
+  int _previousPhotoCount = 0;
+  bool _hasInitializedScroll = false;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_isLoadingMore) return;
+
+    // Check if user reached the left end of horizontal list
+    if (_scrollController.position.pixels <=
+        _scrollController.position.minScrollExtent + 100) {
+      if (!_isAddingToStart) {
+        debugPrint(
+          'Reached left end, adding more photos to start of album ${widget.albumId}',
+        );
+        _isAddingToStart = true;
+        final currentState = context.read<GalleryBloc>().state;
+        if (currentState is AlbumsLoaded) {
+          _previousPhotoCount =
+              currentState.photosByAlbum[widget.albumId]?.length ?? 0;
+          debugPrint('Previous photo count: $_previousPhotoCount');
+        }
+        context.read<GalleryBloc>().add(AddPhotosToAlbumStart(widget.albumId));
+      }
+    }
+
+    // Check if user reached the right end of horizontal list
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 100) {
+      debugPrint(
+        'Reached right end, adding more photos to album ${widget.albumId}',
+      );
+      _isLoadingMore = true;
+      context.read<GalleryBloc>().add(AddPhotosToAlbum(widget.albumId));
+      _isLoadingMore = false;
+    }
   }
 
   @override
@@ -38,9 +82,54 @@ class _InfiniteGalleryRowState extends State<InfiniteGalleryRow> {
           final width = MediaQuery.of(context).size.width - 32;
 
           final photos = state.photosByAlbum[widget.albumId];
+          final allPhotos = state.allPhotosByAlbum[widget.albumId];
+
+          // Initialize scroll position to the beginning of the second set (middle section)
+          if (!_hasInitializedScroll &&
+              photos != null &&
+              allPhotos != null &&
+              photos.length == allPhotos.length * 3) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_scrollController.hasClients) {
+                final itemWidth = width * 0.4 + 16; // width + margin
+                final offsetToSecondSet = allPhotos.length * itemWidth;
+                debugPrint(
+                  'Initializing scroll position to offset: $offsetToSecondSet',
+                );
+                _scrollController.jumpTo(offsetToSecondSet);
+                _hasInitializedScroll = true;
+              }
+            });
+          }
+
+          // Adjust scroll position when photos are added to start
+          if (_isAddingToStart && _previousPhotoCount > 0) {
+            debugPrint(
+              'Adjusting scroll position. Current photos: ${photos?.length}, Previous: $_previousPhotoCount',
+            );
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Future.delayed(const Duration(milliseconds: 10), () {
+                if (_scrollController.hasClients) {
+                  final addedCount =
+                      (photos?.length ?? 0) - _previousPhotoCount;
+                  // Each photo item is approximately 160px (40% of screen width - 32px padding)
+                  final itemWidth = width * 0.4 + 16; // width + margin
+                  final offsetToAdd = addedCount * itemWidth;
+                  debugPrint(
+                    'Adding offset: $offsetToAdd, Current offset: ${_scrollController.offset}',
+                  );
+                  _scrollController.jumpTo(offsetToAdd);
+                  _isAddingToStart = false;
+                  _previousPhotoCount = 0;
+                }
+              });
+            });
+          }
+
           return SizedBox(
             height: width * 0.4,
             child: ListView.builder(
+              controller: _scrollController,
               scrollDirection: Axis.horizontal,
               itemCount: photos?.length ?? 0,
               itemBuilder: (context, index) {

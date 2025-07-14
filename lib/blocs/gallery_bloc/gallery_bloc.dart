@@ -21,6 +21,8 @@ class GalleryBloc extends Bloc<GalleryEvent, GalleryState> {
     on<RefreshData>(_onRefreshData);
     on<AddAlbumsToTop>(_onAddAlbumsToTop);
     on<AddAlbumsToBottom>(_onAddAlbumsToBottom);
+    on<AddPhotosToAlbum>(_onAddPhotosToAlbum);
+    on<AddPhotosToAlbumStart>(_onAddPhotosToAlbumStart);
   }
 
   FutureOr<void> _onLoadAlbums(
@@ -38,6 +40,7 @@ class GalleryBloc extends Bloc<GalleryEvent, GalleryState> {
             albums: albumsWithTop,
             allAlbums: cachedAlbums,
             photosByAlbum: {},
+            allPhotosByAlbum: {},
             hasAlbumsAtTop: true,
           ),
         );
@@ -51,6 +54,7 @@ class GalleryBloc extends Bloc<GalleryEvent, GalleryState> {
           albums: albumsWithTop,
           allAlbums: albums,
           photosByAlbum: {},
+          allPhotosByAlbum: {},
           hasAlbumsAtTop: true,
         ),
       );
@@ -73,10 +77,20 @@ class GalleryBloc extends Bloc<GalleryEvent, GalleryState> {
         'photos_album_${event.albumId}',
       );
       if (cachedPhotos.isNotEmpty) {
+        // For infinite scrolling, add photos to both beginning and end
+        final photosWithDuplicates = [
+          ...cachedPhotos,
+          ...cachedPhotos,
+          ...cachedPhotos,
+        ];
         emit(
           currentState.copyWith(
             photosByAlbum: {
               ...currentState.photosByAlbum,
+              ...{event.albumId: photosWithDuplicates},
+            },
+            allPhotosByAlbum: {
+              ...currentState.allPhotosByAlbum,
               ...{event.albumId: cachedPhotos},
             },
           ),
@@ -85,10 +99,16 @@ class GalleryBloc extends Bloc<GalleryEvent, GalleryState> {
       }
       final photos = await galleryRepo.getPhotosByAlbumId(event.albumId);
       await cacheService.putAll<Photo>('photos_album_${event.albumId}', photos);
+      // For infinite scrolling, add photos to both beginning and end
+      final photosWithDuplicates = [...photos, ...photos, ...photos];
       emit(
         currentState.copyWith(
           photosByAlbum: {
             ...currentState.photosByAlbum,
+            ...{event.albumId: photosWithDuplicates},
+          },
+          allPhotosByAlbum: {
+            ...currentState.allPhotosByAlbum,
             ...{event.albumId: photos},
           },
         ),
@@ -138,5 +158,61 @@ class GalleryBloc extends Bloc<GalleryEvent, GalleryState> {
     // Add a copy of all albums to the bottom
     final updatedAlbums = [...currentState.albums, ...currentState.allAlbums];
     emit(currentState.copyWith(albums: updatedAlbums));
+  }
+
+  FutureOr<void> _onAddPhotosToAlbum(
+    AddPhotosToAlbum event,
+    Emitter<GalleryState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! AlbumsLoaded) {
+      return;
+    }
+
+    final allPhotos = currentState.allPhotosByAlbum[event.albumId];
+    if (allPhotos == null || allPhotos.isEmpty) {
+      return;
+    }
+
+    final currentPhotos = currentState.photosByAlbum[event.albumId] ?? [];
+    // Add a copy of all photos to the end for infinite scrolling
+    final updatedPhotos = [...currentPhotos, ...allPhotos];
+
+    emit(
+      currentState.copyWith(
+        photosByAlbum: {
+          ...currentState.photosByAlbum,
+          ...{event.albumId: updatedPhotos},
+        },
+      ),
+    );
+  }
+
+  FutureOr<void> _onAddPhotosToAlbumStart(
+    AddPhotosToAlbumStart event,
+    Emitter<GalleryState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! AlbumsLoaded) {
+      return;
+    }
+
+    final allPhotos = currentState.allPhotosByAlbum[event.albumId];
+    if (allPhotos == null || allPhotos.isEmpty) {
+      return;
+    }
+
+    final currentPhotos = currentState.photosByAlbum[event.albumId] ?? [];
+    // Add a copy of all photos to the beginning for infinite scrolling
+    final updatedPhotos = [...allPhotos, ...currentPhotos];
+
+    emit(
+      currentState.copyWith(
+        photosByAlbum: {
+          ...currentState.photosByAlbum,
+          ...{event.albumId: updatedPhotos},
+        },
+      ),
+    );
   }
 }

@@ -37,7 +37,7 @@ class _GalleryViewState extends State<GalleryView> {
         _scrollController.position.minScrollExtent + 100) {
       if (!_isAddingToTop) {
         debugPrint('Reached top, adding albums to top');
-        _isLoadingMore = true;
+
         _isAddingToTop = true;
         final currentState = context.read<GalleryBloc>().state;
         if (currentState is AlbumsLoaded) {
@@ -45,10 +45,6 @@ class _GalleryViewState extends State<GalleryView> {
           debugPrint('Previous album count: $_previousAlbumCount');
         }
         context.read<GalleryBloc>().add(const AddAlbumsToTop());
-        // Reset loading flag after a short delay
-        Future.delayed(const Duration(milliseconds: 10), () {
-          _isLoadingMore = false;
-        });
       }
     }
 
@@ -58,10 +54,7 @@ class _GalleryViewState extends State<GalleryView> {
       debugPrint('Reached bottom, adding albums to bottom');
       _isLoadingMore = true;
       context.read<GalleryBloc>().add(const AddAlbumsToBottom());
-      // Reset loading flag after a short delay
-      Future.delayed(const Duration(milliseconds: 10), () {
-        _isLoadingMore = false;
-      });
+      _isLoadingMore = false;
     }
   }
 
@@ -89,21 +82,21 @@ class _GalleryViewState extends State<GalleryView> {
               'Adjusting scroll position. Current albums: ${currentState.albums.length}, Previous: $_previousAlbumCount',
             );
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              Future.delayed(const Duration(milliseconds: 10), () {
-                if (_scrollController.hasClients) {
-                  final addedCount =
-                      currentState.albums.length - _previousAlbumCount;
-                  // Each album item is approximately 240px (40px padding + ~200px content)
-                  final itemHeight = 240.0;
-                  final offsetToAdd = addedCount * itemHeight;
-                  debugPrint(
-                    'Adding offset: $offsetToAdd, Current offset: ${_scrollController.offset}',
-                  );
-                  _scrollController.jumpTo(-100 - kToolbarHeight + offsetToAdd);
-                  _isAddingToTop = false;
-                  _previousAlbumCount = 0;
-                }
-              });
+              // Future.delayed(const Duration(milliseconds: 10), () {
+              if (_scrollController.hasClients) {
+                final addedCount =
+                    currentState.albums.length - _previousAlbumCount;
+                // Each album item is approximately 240px (40px padding + ~200px content)
+                final itemHeight = 240.0;
+                final offsetToAdd = addedCount * itemHeight;
+                debugPrint(
+                  'Adding offset: $offsetToAdd, Current offset: ${_scrollController.offset}',
+                );
+                _scrollController.jumpTo(-100 - kToolbarHeight + offsetToAdd);
+                _isAddingToTop = false;
+                _previousAlbumCount = 0;
+              }
+              // });
             });
           }
 

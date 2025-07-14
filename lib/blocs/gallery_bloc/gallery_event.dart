@@ -31,3 +31,21 @@ class AddAlbumsToTop extends GalleryEvent {
 class AddAlbumsToBottom extends GalleryEvent {
   const AddAlbumsToBottom();
 }
+
+class AddPhotosToAlbum extends GalleryEvent {
+  final int albumId;
+
+  const AddPhotosToAlbum(this.albumId);
+
+  @override
+  List<Object?> get props => [albumId];
+}
+
+class AddPhotosToAlbumStart extends GalleryEvent {
+  final int albumId;
+
+  const AddPhotosToAlbumStart(this.albumId);
+
+  @override
+  List<Object?> get props => [albumId];
+}
